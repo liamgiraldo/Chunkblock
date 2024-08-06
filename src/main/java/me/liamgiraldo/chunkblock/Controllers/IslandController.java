@@ -38,7 +38,6 @@ public class IslandController implements Listener {
         removePlayer(model,player);
         if (plugin.reroute != null)
             player.teleport(plugin.reroute);
-
     }
 
 
@@ -49,8 +48,10 @@ public class IslandController implements Listener {
 
 
 
-
-    private void addPlayer(IslandModel island, Player player){
+    /*
+    We'd probably only want to add players to an island when they run a command to join an island
+     */
+    public void addPlayer(IslandModel island, Player player){
         player.setMetadata("islandId", new FixedMetadataValue(plugin,island.getId().toString()));
         Map<UUID, EquipmentPair> cachedInvs = island.inventories();
         UUID uuid = player.getUniqueId();
@@ -61,11 +62,23 @@ public class IslandController implements Listener {
             cachedInvs.remove(uuid);
         }
     }
-    private void removePlayer(IslandModel island, Player player){
+    /*Players should be removed only when they are leaving the Skyblock game, maybe we'd want to
+    remove them if there are other actual worlds besides islands, but idk
+    We can preserve health and hunger if we want too, but I didn't make that.
+     */
+
+    /**
+     * Clears Skyblock player metadata and player inventory, but saves the inventory first
+     * @param island
+     * @param player
+     */
+    public void removePlayer(IslandModel island, Player player){
         player.removeMetadata("islandId",plugin);
         PlayerInventory inv = player.getInventory();
         EquipmentPair items = new EquipmentPair(inv.getContents(),inv.getArmorContents());
         island.inventories().put(player.getUniqueId(),items);
+        player.getInventory().setArmorContents(null);
+        player.getInventory().setContents(null);
     }
 
     /**
