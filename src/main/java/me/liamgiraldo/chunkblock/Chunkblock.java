@@ -1,5 +1,6 @@
 package me.liamgiraldo.chunkblock;
 
+import me.liamgiraldo.chunkblock.Controllers.IslandController;
 import me.liamgiraldo.chunkblock.util.ConfigFile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -7,22 +8,29 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.List;
-
 public final class Chunkblock extends JavaPlugin {
+    public IslandController islandController;
     public ConfigFile islands;
     public ConfigFile itemStorage;
+    public ConfigFile settings;
+    //Where should players go when they quit the game or quit skyblock?
+    public Location reroute;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         islands = new ConfigFile(this,"islands");
         itemStorage = new ConfigFile(this, "item-storage");
+        settings = new ConfigFile(this,"settings");
+        this.reroute = loadReroute();
+        islandController = new IslandController(this);
+        islandController.reloadIslands();
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        islandController.disable();
     }
 
 
@@ -31,7 +39,7 @@ public final class Chunkblock extends JavaPlugin {
      * @param loc the location to turn into a String
      * @return a String formatted as world,x,y,z,yaw,pitch from loc values
      */
-    public String fromLocation(Location loc){
+    public String fromLoc(Location loc){
         return loc.getWorld().getName() + "," + loc.getX() + "," + loc.getY() + "," + loc.getZ() + "," + loc.getYaw() + "," + loc.getPitch();
     }
 
@@ -94,6 +102,12 @@ public final class Chunkblock extends JavaPlugin {
             bytes[i] = Byte.parseByte(unbox[i]);
         }
         return bytes;
+    }
+
+    public Location loadReroute(){
+        String content = this.settings.getConfig().getString("reroute");
+        if (content == null) return null;
+        else return this.fromString(content);
     }
 
 

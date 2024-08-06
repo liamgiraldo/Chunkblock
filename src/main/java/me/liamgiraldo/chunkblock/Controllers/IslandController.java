@@ -5,8 +5,9 @@ import me.liamgiraldo.chunkblock.Models.IslandModel;
 import me.liamgiraldo.chunkblock.util.EquipmentPair;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -20,12 +21,24 @@ import java.util.stream.Collectors;
 
 public class IslandController implements Listener {
     private final Chunkblock plugin;
-    private Map<String, IslandModel> islands = new HashMap<>();
+    public Map<String, IslandModel> islands;
     private MapGenerator generator;
 
     public IslandController(Chunkblock plugin){
         // Load islands from config
         this.plugin = plugin;
+        this.islands = new HashMap<>();
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event){
+        Player player = event.getPlayer();
+        IslandModel model = islandOn(player);
+        if (model == null) return;
+        removePlayer(model,player);
+        if (plugin.reroute != null)
+            player.teleport(plugin.reroute);
+
     }
 
 
@@ -38,7 +51,7 @@ public class IslandController implements Listener {
 
 
     private void addPlayer(IslandModel island, Player player){
-        player.setMetadata("islandId", new FixedMetadataValue(plugin,island.id().toString()));
+        player.setMetadata("islandId", new FixedMetadataValue(plugin,island.getId().toString()));
         Map<UUID, EquipmentPair> cachedInvs = island.inventories();
         UUID uuid = player.getUniqueId();
         if (cachedInvs.containsKey(uuid)){
@@ -93,7 +106,10 @@ public class IslandController implements Listener {
                 .split(","))
                 .map(UUID::fromString)
                 .collect(Collectors.toCollection(HashSet::new));
-        return new IslandModel(UUID.fromString(id), leader, members, size, center);
+        Location spawn = plugin.fromString(plugin.islands.getConfig().getString(path + ".spawn"));
+        IslandModel model = new IslandModel(UUID.fromString(id),leader,members,size,center,spawn);
+        loadInventories(model);
+        return model;
     }
 
     private IslandModel createNewIsland(Location center, UUID playerUUID){
@@ -107,9 +123,44 @@ public class IslandController implements Listener {
     }
 
 
+    public void disable(){
+        Collection<IslandModel> models = islands.values();
+        for (IslandModel model : models){
+            saveModel(model);
+        }
+    }
+
+
+    public void saveModel(IslandModel model){
+        String path = "islands." + model.getId();
+        //owner
+        plugin.islands.getConfig().set(path + ".owner", model.getLeader().toString());
+        Set<UUID> members = model.getMembers();
+        StringBuilder memberString = new StringBuilder();
+        for (UUID uuid : members)
+            memberString.append(uuid.toString()).append(',');
+        memberString.deleteCharAt(memberString.length()-1);
+        //members
+        plugin.islands.getConfig().set(path + ".members",memberString.toString());
+        //radius
+        plugin.islands.getConfig().set(path + ".size",model.getRadius());
+        //center
+        plugin.islands.getConfig().set(path + ".center",plugin.fromBLoc(model.getCenter()));
+        //spawn
+        plugin.islands.getConfig().set(path + ".spawn",plugin.fromLoc(model.getSpawn()));
+        plugin.islands.saveConfig();
+        saveInventories(model);
+
+    }
+
+
     /*
     Island loading / Creation
      */
+
+    /*
+Inventory Loading / Saving
+ */
     public byte[] writeItemsToBytes(ItemStack[] items){
         try{
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -118,7 +169,7 @@ public class IslandController implements Listener {
             //Writing the total length
             dataOut.writeInt(size);
             for (int i = 0; i < size; i++) {
-                dataOut.writeInt(i); //Writing the slot
+              //  dataOut.writeInt(i); //Writing the slot
                 dataOut.writeObject(items[i]); //Writing the item
             }
             dataOut.close();
@@ -131,14 +182,16 @@ public class IslandController implements Listener {
         return null;
     }
 
+
     public ItemStack[] loadItemsFromBytes(byte[] bytes){
+        if (bytes == null) return null;
         try{
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             BukkitObjectInputStream dataIn = new BukkitObjectInputStream(inputStream);
             int size = dataIn.readInt();
             ItemStack[] items = new ItemStack[size];
             for (int i = 0; i < size; i++){
-                int slot = dataIn.readInt();
+            //    int slot = dataIn.readInt();
                 Object readObj = dataIn.readObject();
                 if (readObj instanceof ItemStack){
                     ItemStack item = (ItemStack) readObj;
@@ -163,19 +216,37 @@ public class IslandController implements Listener {
                 armor: adakfakfjairqiq
          */
         for (UUID uuid : keySet){
-            //Saves ea
-            String path = island.id() + "." + uuid;
+
+            String path = island.getId() + "." + uuid;
             EquipmentPair pair = invs.get(uuid);
             byte[] content = writeItemsToBytes(pair.content());
             byte[] armor = writeItemsToBytes(pair.armor());
             plugin.itemStorage.getConfig().set(path + ".content", plugin.writeByteArray(content));
             plugin.itemStorage.getConfig().set(path + ".armor",plugin.writeByteArray(armor));
+            plugin.itemStorage.saveConfig();
+        }
+    }
+
+    public void loadInventories(IslandModel model){
+        UUID islandId = model.getId();
+        if (!plugin.itemStorage.getConfig().contains(islandId.toString())) return;
+        Set<String> keys = plugin.itemStorage.getConfig().getConfigurationSection(model.getId().toString()).getKeys(false);
+        for (String key : keys){
+            String path = islandId + "." + key;
+            byte[] byteContent = plugin.readBytesFromStr(plugin.itemStorage.getConfig().getString(path + ".content"));
+            byte[] byteArmor = plugin.readBytesFromStr(plugin.itemStorage.getConfig().getString(path + ".armor"));
+            ItemStack[] content = loadItemsFromBytes(byteContent);
+            ItemStack[] armor = loadItemsFromBytes(byteArmor);
+            EquipmentPair pair = new EquipmentPair(content,armor);
+            model.inventories().put(UUID.fromString(key),pair);
         }
     }
 
     /*
     Inventory Loading / Saving
      */
+
+
 
 
 }

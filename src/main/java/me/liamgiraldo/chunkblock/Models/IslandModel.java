@@ -5,9 +5,7 @@ import me.liamgiraldo.chunkblock.util.EquipmentPair;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
-import java.sql.Array;
 import java.util.*;
 
 public class IslandModel {
@@ -23,15 +21,19 @@ public class IslandModel {
     private Location center, spawn;
     private BoundingBox bounds;
 
-    public IslandModel(UUID id, UUID leader, Set<UUID> members, int radius, Location center) {
+    public IslandModel(UUID id, UUID leader, Set<UUID> members, int radius, Location center, Location spawn) {
         this.id = id;
         this.leader = leader;
         this.members = members != null ? members : new HashSet<>();
         this.radius = radius;
         this.center = center;
-        this.spawn = center.getWorld().getHighestBlockAt(center.getBlockX(), center.getBlockZ()).getLocation().add(0.5,0,0.5);
+        this.spawn = spawn;
         inventories = new HashMap<>();
 
+    }
+
+    public IslandModel(UUID id, UUID leader, Set<UUID> members, int radius, Location center) {
+        this(id,leader,members,radius,center,center.getWorld().getHighestBlockAt(center.getBlockX(), center.getBlockZ()).getLocation().add(0.5,0,0.5));
     }
 
 
@@ -41,10 +43,7 @@ public class IslandModel {
 
 
 
-    public UUID id(){ return id; }
-    public UUID getLeader() {
-        return leader;
-    }
+
 
     public void setLeader(Player leader) {
         this.setLeader(leader.getUniqueId());
@@ -65,7 +64,26 @@ public class IslandModel {
 
     }
 
+    /**
+     * Sets the spawnpoint for the island
+     * @param spawn the new spawnpoint
+     */
+    public void setSpawn(Location spawn){
+        this.spawn = spawn;
+    }
+
+    public UUID getId(){ return id; }
+    public UUID getLeader() {
+        return leader;
+    }
+
+    public int getRadius(){ return radius; }
+
     public World getWorld(){ return center.getWorld(); }
+
+    public Location getCenter(){ return center; }
+
+    public Location getSpawn(){ return spawn; }
 
     public Set<UUID> getMembers() {
         return members;
