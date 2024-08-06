@@ -11,12 +11,13 @@ import java.util.List;
 
 public final class Chunkblock extends JavaPlugin {
     public ConfigFile islands;
+    public ConfigFile itemStorage;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         islands = new ConfigFile(this,"islands");
-
+        itemStorage = new ConfigFile(this, "item-storage");
     }
 
     @Override
@@ -63,6 +64,36 @@ public final class Chunkblock extends JavaPlugin {
             float pitch = Float.parseFloat(unbox[5]);
             return new Location(world, x,y,z,yaw,pitch);
         }else return new Location(world,x,y,z);
+    }
+
+    /**
+     * Takes a byte array and formats it as "byte,byte,byte,etc..."
+     * @param bytes the byte array to turn into a String
+     * @return String formatted as "byte,byte,byte,etc..."
+     */
+    public String writeByteArray(byte[] bytes){
+        StringBuilder builder = new StringBuilder();
+        for (byte b : bytes){
+            builder.append(b);
+            builder.append(',');
+        }
+        builder.deleteCharAt(builder.length()-1);
+        return builder.toString();
+    }
+
+    /**
+     * Takes a String formatted as "byte,byte,byte,etc..." and turns it into a byte array
+     * @param str String formatted as "byte,byte,byte,etc..."
+     * @return byte array whose values are read from str
+     */
+    public byte[] readBytesFromStr(String str){
+        String[] unbox = str.split(",");
+        int length = unbox.length;
+        byte[] bytes = new byte[length];
+        for (int i = 0; i < length; i++){
+            bytes[i] = Byte.parseByte(unbox[i]);
+        }
+        return bytes;
     }
 
 

@@ -38,6 +38,7 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
         if (sender instanceof Player){
 
         }else sender.sendMessage(ChatColor.RED + "Maybe only players use this command?");
+        return false;
     }
 
 
