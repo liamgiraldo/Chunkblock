@@ -1,0 +1,6 @@
+islands:
+  island-uuid:
+    owner: player-uuid
+    members: u,u,u,u
+    size: 300
+    center:
