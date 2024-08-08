@@ -53,6 +53,7 @@ public class IslandController implements Listener {
      */
     public void addPlayer(IslandModel island, Player player){
         player.setMetadata("islandId", new FixedMetadataValue(plugin,island.getId().toString()));
+        player.teleport(island.getSpawn());
         Map<UUID, EquipmentPair> cachedInvs = island.inventories();
         UUID uuid = player.getUniqueId();
         if (cachedInvs.containsKey(uuid)){
