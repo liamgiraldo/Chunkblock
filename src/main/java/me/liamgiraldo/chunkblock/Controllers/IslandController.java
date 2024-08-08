@@ -84,7 +84,7 @@ public class IslandController implements Listener {
     /**
      * Reads player meta data
      * @param player the player to check
-     * @return the Island that the player is currently on, null if they are on no island
+     * @return the Island that the player is player for, null if they are on no island
      */
     private IslandModel islandOn(Player player){
         if (!player.hasMetadata("islandId")) return null;

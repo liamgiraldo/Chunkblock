@@ -15,4 +15,5 @@ public class EquipmentPair {
     }
     public ItemStack[] armor(){ return armor; }
     public ItemStack[] content(){ return content; }
+
 }

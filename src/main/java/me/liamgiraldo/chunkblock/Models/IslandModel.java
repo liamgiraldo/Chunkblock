@@ -17,7 +17,7 @@ public class IslandModel {
     private UUID leader;
 
     private int radius;
-    private int maxRadius = 5000;
+    private int maxRadius;
     private Location center, spawn;
     private BoundingBox bounds;
 
@@ -28,6 +28,7 @@ public class IslandModel {
         this.radius = radius;
         this.center = center;
         this.spawn = spawn;
+        maxRadius = 5000;
         inventories = new HashMap<>();
 
     }
@@ -102,6 +103,11 @@ public class IslandModel {
         bounds = new BoundingBox(center, radius);
     }
 
+    /**
+     * @return true if the model is a Co-op island, false if otherwise
+     *  An island is co-op if it has 1+ members (excluding the owner)
+     */
+    public boolean isCoop(){ return !members.isEmpty(); }
 
 
 }
