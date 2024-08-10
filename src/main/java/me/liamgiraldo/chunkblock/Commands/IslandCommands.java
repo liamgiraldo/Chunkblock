@@ -31,14 +31,14 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
      * Available commands are:
      *
      * create
-     * invite
+     * invite done
      * visit
-     * accept
-     * cancel
-     * decline
-     * leave
+     * accept done
+     * cancel done
+     * decline done
+     * leave done
      * disband
-     * kick
+     * kick done
      *
      * */
     @Override
@@ -182,8 +182,43 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                         player.sendMessage(ChatColor.GREEN + "You've left " + arg + "'s co-op island!");
                         return true;
                     }
-                    //
+                    //KICK COMMAND
+                    if (sub.equals("kick") || sub.equals("k")) {
+                        IslandModel current = islandOn(player);
+                        if (current == null || !current.isCoop() || !current.getLeader().equals(uuid)) {
+                            player.sendMessage(ChatColor.RED + "You need to be on a co-op island you own to use this command!");
+                            return false;
+                        }
+                        UUID target = fromName(arg);
+                        Player p = Bukkit.getPlayer(target);
+                        if (p != null && p.isOnline()) {
+                            islandController.removePlayer(current, p);
+                            p.sendMessage(ChatColor.YELLOW + "You've been removed from " + player.getName() + "'s island!");
+                        }
+                        current.getMembers().remove(target);
+                        player.sendMessage(ChatColor.GREEN + "Removed " + arg + " from your island!");
+                        return true;
+                    }
+                    //DISBAND COMMAND
+                    if (sub.equals("disband")){
+                        //idk how we wanna do deletion yet
+                    }
+
+                    if (sub.equals("cancel") || sub.equals("c")){
+                        UUID target = fromName(arg);
+                        Invite invite = findInvite(target, uuid);
+                        if (invite == null){
+                            player.sendMessage(ChatColor.RED + "There is no invite to " + arg + " to cancel");
+                            return false;
+                        }
+                        invites.remove(invite);
+                        OfflinePlayer offline = Bukkit.getOfflinePlayer(target);
+                        if (offline.isOnline()) offline.getPlayer().sendMessage(ChatColor.YELLOW + "Your invitation to " + player.getName() + "'s island has been revoked");
+                        player.sendMessage(ChatColor.GREEN + "Revoked " + arg + "'s invite");
+                        return true;
+                    }
                 }
+
             }
             //Default case
             IslandModel privateIsland = findPrivateIsland(uuid);
