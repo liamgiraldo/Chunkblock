@@ -3,6 +3,7 @@ package me.liamgiraldo.chunkblock.Commands;
 import me.liamgiraldo.chunkblock.Chunkblock;
 import me.liamgiraldo.chunkblock.Controllers.IslandController;
 import me.liamgiraldo.chunkblock.Models.IslandModel;
+import me.liamgiraldo.chunkblock.util.Invite;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -12,15 +13,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class IslandCommands implements CommandExecutor, TabCompleter {
     private final Chunkblock plugin;
     private IslandController islandController;
-
+    private List<Invite> invites;
 
     public IslandCommands(IslandController islandController){
         this.plugin = JavaPlugin.getPlugin(Chunkblock.class);
         this.islandController = islandController;
+        invites = new ArrayList<>();
     }
 
 
@@ -96,16 +99,42 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                             player.sendMessage(ChatColor.RED + "You cannot invite players to this island because you already have a co-op island! There can only be one!");
                             return false;
                         }
+                        if (current == null || !current.getLeader().equals(player.getUniqueId())){
+                            player.sendMessage(ChatColor.RED + "You must be on an island you own to invite a player to it!");
+                            return false;
+                        }
                         player.sendMessage(ChatColor.GREEN + "Invited " + arg + " to your island");
-                        islandController.invites.put(target,current);
+                        Invite invite = new Invite(target,current.getId(),player.getUniqueId());
+                        invites.add(invite);
                         OfflinePlayer offline = Bukkit.getOfflinePlayer(target);
                         if (offline.isOnline()) {
                             Player p = offline.getPlayer();
                             p.sendMessage(ChatColor.GREEN + "You've been invited to " + player.getName() + "'s " + "island");
                         }
+                        return true;
                     }
 
-
+                    if (sub.equals("accept") || sub.equals("a")){
+                        //arg is a player name
+                        UUID target = fromName(arg);
+                        Invite invite = findInvite(player.getUniqueId(),target);
+                        if (invite == null){
+                            player.sendMessage(ChatColor.RED + "You do not have an invite to " + arg + "'s island");
+                            return false;
+                        }
+                        OfflinePlayer offline = Bukkit.getOfflinePlayer(target);
+                        if (offline.isOnline()){
+                            offline.getPlayer().sendMessage(ChatColor.GREEN + player.getName() + " has joined your island");
+                            return false;
+                        }
+                        player.sendMessage(ChatColor.GREEN + "Joining island... ");
+                        player.sendMessage(ChatColor.GREEN + "Type /island join " + arg + " to connect to the island");
+                        IslandModel island = plugin.islandController.islands.get(invite.islandId().toString());
+                        invites.remove(invite);
+                        island.getMembers().add(player.getUniqueId());
+                        //islandController.addPlayer(island, player);
+                        return true;
+                    }
                 }
             }
             //Default case
@@ -155,8 +184,9 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
             if (model.isCoop() && model.getLeader().equals(owner) && !island.equals(model)) return false;
         }
         //check if owner has already invited someone to a different island
-        Collection<IslandModel> invited = islandController.invites.values();
-        for (IslandModel model : invited){
+        List<UUID> invited = invites.stream().map(Invite::islandId).collect(Collectors.toList());
+        for (UUID islandId : invited){
+            IslandModel model = islandController.islands.get(islandId.toString());
             if (owner.equals(model.getLeader()) && !model.equals(island)) return false;
         }
         return true;
@@ -200,6 +230,13 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
         if (!player.hasMetadata("islandId")) return null;
         String id = player.getMetadata("islandId").get(0).asString();
         return islandController.islands.getOrDefault(id, null);
+    }
+
+    private Invite findInvite(UUID invitee, UUID owner){
+        for (Invite invite : invites){
+            if (invite.invitee().equals(invitee) && invite.ownerId().equals(owner)) return invite;
+        }
+        return null;
     }
 
 

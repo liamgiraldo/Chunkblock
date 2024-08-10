@@ -22,12 +22,7 @@ import java.util.stream.Collectors;
 public class IslandController implements Listener {
     private final Chunkblock plugin;
     public Map<String, IslandModel> islands;
-    //island invites
-    /*Might move to IslandCommands class, only
-    put it here in case we want to notify people of invites if they join the server, but we might only want to do this
-    when they join the game with the command.
-     */
-    public Map<UUID, IslandModel> invites;
+
 
     private MapGenerator generator;
 
@@ -35,7 +30,6 @@ public class IslandController implements Listener {
         // Load islands from config
         this.plugin = plugin;
         this.islands = new HashMap<>();
-        invites = new HashMap<>();
     }
 
     @EventHandler
