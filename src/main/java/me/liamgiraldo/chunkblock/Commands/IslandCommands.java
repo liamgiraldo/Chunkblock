@@ -117,6 +117,10 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                     if (sub.equals("accept") || sub.equals("a")){
                         //arg is a player name
                         UUID target = fromName(arg);
+                        if (target == null){
+                            player.sendMessage(ChatColor.RED + "Could not find player with the name " + arg);
+                            return false;
+                        }
                         Invite invite = findInvite(player.getUniqueId(),target);
                         if (invite == null){
                             player.sendMessage(ChatColor.RED + "You do not have an invite to " + arg + "'s island");
@@ -135,6 +139,50 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                         //islandController.addPlayer(island, player);
                         return true;
                     }
+                    //DECLINE INVITE COMMAND
+                    if (sub.equals("decline") || sub.equals("d")){
+                        //arg is a player name
+                        UUID target = fromName(arg);
+                        if (target == null){
+                            player.sendMessage(ChatColor.RED + "Could not find player with the name " + arg);
+                            return false;
+                        }
+                        Invite invite = findInvite(uuid, target);
+                        if (invite == null){
+                            player.sendMessage(ChatColor.YELLOW + "You do not have any island invites from " + arg);
+                            return false;
+                        }
+                        invites.remove(invite);
+                        Player p = Bukkit.getPlayer(target);
+                        if (p != null && p.isOnline()) p.sendMessage(ChatColor.YELLOW + player.getName() + " has rejected you! So sad!");
+                        player.sendMessage(ChatColor.GREEN + "You've rejected " + arg + "'s invitation!");
+                        return true;
+                    }
+                    //LEAVE COMMAND
+                    if (sub.equals("leave") || sub.equals("l")){
+                        //arg is a player name (hm I'm starting to think it might not be anything else now... I'll rename it if that happens)
+                        UUID target = fromName(arg);
+                        if (target == null){
+                            player.sendMessage(ChatColor.RED + "Could not find player with the name " + arg);
+                            return false;
+                        }
+                        if (target.equals(uuid)){
+                            player.sendMessage(ChatColor.RED + "Wrong command! Please use '/island disband confirm' instead to destroy your island as the owner!");
+                            return false;
+                        }
+                        //the coop model the sender is tryna leave
+                        IslandModel coop = findFirstOption(target, uuid);
+                        if (coop == null){
+                            player.sendMessage(ChatColor.RED + "You aren't a part of any coop islands owned by " + arg);
+                            return false;
+                        }
+                        //remove the player from the member list
+                        coop.getMembers().remove(uuid);
+                        islandController.removePlayer(coop,player);
+                        player.sendMessage(ChatColor.GREEN + "You've left " + arg + "'s co-op island!");
+                        return true;
+                    }
+                    //
                 }
             }
             //Default case
@@ -205,6 +253,9 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
         }
         return null;
     }
+
+
+
     /**
      * Gets a player's UUID from a player name. Currently, uuids are not cached and tied to names, so all offline players are looped through
      * @param name The name of the player you want the UUID of
