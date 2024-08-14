@@ -38,6 +38,10 @@ public class BoundingBox {
         return this.overlaps(block.getX(),block.getZ(), mx, mz );
     }
 
+    public boolean overlaps(BoundingBox box){
+        return this.overlaps(box.minX(),box.minZ(),box.maxX(),box.maxZ());
+    }
+
 
     /**
      * Check whether a point is within the bounding box

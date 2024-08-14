@@ -1,27 +1,37 @@
 package me.liamgiraldo.chunkblock.Controllers;
 
+import me.liamgiraldo.chunkblock.Models.IslandModel;
+import me.liamgiraldo.chunkblock.util.BoundingBox;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class MapGenerator {
 
     /**
      * This is the world where maps are going to be generated
      * */
-    private World world;
+    private final World world;
 
-    private Material grass = Material.GRASS;
-    private Material dirt = Material.DIRT;
+    private final Material grass;
+    private final Material dirt;
+    private final IslandController controller;
 
-    public MapGenerator(World world){
+    public MapGenerator(World world, IslandController controller){
         this.world = world;
+        dirt = Material.DIRT;
+        grass = Material.GRASS;
+        this.controller = controller;
     }
 
 
@@ -59,5 +69,48 @@ public class MapGenerator {
                 }
             }
         }
+    }
+
+    /**
+     * Finds an empty island position that is a certain distance away from other islands
+     * @param center the location to start at, should be a copy of a Location, not the original since it will be edited
+     * @param distance how much distance should be between each island
+     * @param maxIslandRad how large will the islands be able to get
+     *
+     * @return A valid center position for a new island
+     */
+    public Vector findValidPos(Location center, int distance, int maxIslandRad){
+        Location base = center.clone();
+        BlockFace[] directions = new BlockFace[]{BlockFace.NORTH,BlockFace.EAST,BlockFace.SOUTH,BlockFace.WEST, BlockFace.NORTH_EAST,BlockFace.NORTH_WEST,BlockFace.SOUTH_EAST,BlockFace.SOUTH_WEST};
+        Collection<IslandModel> islands = controller.islands.values();
+        BlockFace dir = directions[ThreadLocalRandom.current().nextInt(directions.length)];
+        BoundingBox box = new BoundingBox(center,maxIslandRad);
+        boolean pass = false;
+        while (!pass) {
+            /*Used to make sure that the pass boolean is only marked true if the IslandModel loop
+            is able to run through all its elements (var box doesn't overlap with any islands)
+             */
+            pass_label:
+            {
+                for (IslandModel island : islands) {
+                    if (box.overlaps(island.bounds())) {
+                        base.add(dir.getModX() * (maxIslandRad + distance), dir.getModY() * (maxIslandRad + distance), dir.getModZ() * (maxIslandRad + distance));
+                        //may consider allowing you edit bounding box values to limit this object creation
+                        box = new BoundingBox(base, maxIslandRad);
+                        BlockFace newDir = directions[ThreadLocalRandom.current().nextInt(directions.length)];
+                        //Kind of icky, but functionally, this is only supposed to cover an edge case in randomness
+                        while (dir.getOppositeFace() == newDir)
+                            dir = directions[ThreadLocalRandom.current().nextInt(directions.length)];
+                        break pass_label;
+                    }
+                }
+                pass = true;
+            }
+        }
+        return base.toVector();
+    }
+
+    private double distSquared(Vector pos1, Vector pos2){
+        return Math.pow(pos2.getX() - pos1.getX(), 2) + Math.pow(pos2.getZ() - pos1.getZ(), 2);
     }
 }

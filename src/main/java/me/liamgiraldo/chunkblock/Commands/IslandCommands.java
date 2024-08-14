@@ -199,11 +199,7 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                         player.sendMessage(ChatColor.GREEN + "Removed " + arg + " from your island!");
                         return true;
                     }
-                    //DISBAND COMMAND
-                    if (sub.equals("disband")){
-                        //idk how we wanna do deletion yet
-                    }
-
+                    //CANCEL COMMAND
                     if (sub.equals("cancel") || sub.equals("c")){
                         UUID target = fromName(arg);
                         Invite invite = findInvite(target, uuid);
@@ -216,6 +212,15 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                         if (offline.isOnline()) offline.getPlayer().sendMessage(ChatColor.YELLOW + "Your invitation to " + player.getName() + "'s island has been revoked");
                         player.sendMessage(ChatColor.GREEN + "Revoked " + arg + "'s invite");
                         return true;
+                    }
+
+                    if (sub.equals("disband")){
+                        if (arg.equals("confirm")){
+
+                        }else {
+                            sender.sendMessage(ChatColor.RED + "In order to confirm island deletion, you need to type /island disband confirm");
+
+                        }
                     }
                 }
 
