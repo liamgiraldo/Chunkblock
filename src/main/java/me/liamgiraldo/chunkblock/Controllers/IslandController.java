@@ -14,6 +14,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.Vector;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
@@ -66,20 +67,16 @@ public class IslandController implements Listener {
 
     /**
      * Checks if a player is on a valid island
-     * What constitutes a valid island is whether the player is a member of the island they are on, positionally
+     * What constitutes a valid island is whether the player is a member of the island they are on
      * This includes the island they own
      * @param player the player to check
      * @return true if the player is on a valid island, false if they are not
      * */
     public boolean isPlayerOnValidIsland(Player player){
-        Location loc = player.getLocation();
-        IslandModel model = getIslandRelativeToLocation(loc);
 
-        if(model == null) return false;
-        if(model.getMembers().contains(player.getUniqueId())) return true;
-        if(islandOn(player) == model) return true;
-
-        return false;
+        IslandModel island = islandOn(player);
+        if(island == null) return false;
+        return island.isMember(player.getUniqueId());
     }
 
     /**
@@ -88,18 +85,21 @@ public class IslandController implements Listener {
      * @return true if the player can perform an action, false if they cannot
      * */
     public boolean canPlayerPerformAction(Player player){
-        //it's a no if they aren't on their own island or an island they aren't a member of
-        if(!isPlayerOnValidIsland(player)){
-            return false;
+
+        //if a player is in a skyblock world
+        if(Arrays.asList(plugin.getLinkedWorlds()).contains(player.getWorld().getName())){
+            //they can perform an action if they are on a valid island (meaning their own or an island they are a member of)
+            if(isPlayerOnValidIsland(player)){
+                return true;
+            }
+            else{
+                return false;
+            }
         }
 
-        //it's a yes if they aren't in the world rerouted
-        if(player.getLocation().getWorld() != plugin.reroute.getWorld()){
-            return true;
-        }
+        //the player isn't in a skyblock world, so they can perform an action
+        return true;
 
-        //it's a no if they are in the world rerouted
-        return false;
     }
 
     /**
@@ -211,6 +211,11 @@ public class IslandController implements Listener {
         return model;
     }
 
+    /**
+     * Creates a new island at the closest it can to the given center location
+     * @param center position to generate the island closest to
+     * @param playerUUID the player who will own the island
+     * */
     public IslandModel createNewIsland(Location center, UUID playerUUID){
         UUID id = UUID.randomUUID();
         //Very unlikely, but just making sure the uuid isn't already in use
@@ -218,8 +223,10 @@ public class IslandController implements Listener {
         IslandModel island = new IslandModel(id, playerUUID, 30, center);
         islands.put(id.toString(), island);
 
+        //find a valid position for the island
+        Vector islandPosition = generator.findValidPos(center, 100, 30);
         //generate the island
-        generator.generateSkyblock(center.getBlockX(), center.getBlockY(), center.getBlockZ());
+        generator.generateSkyblock(islandPosition.getBlockX(), islandPosition.getBlockY(), islandPosition.getBlockZ());
 
         return island;
     }

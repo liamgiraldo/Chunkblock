@@ -42,12 +42,6 @@ public class MapGenerator {
      * @param z z coordinate
      * */
     public void generateSkyblock(int x, int y, int z){
-        //5000 is just a random number that I chose, it could be anything
-        Vector pos = findValidPos(new Location(this.world, x, y, z), 10, 5000);
-
-        x = pos.getBlockX();
-        y = pos.getBlockY();
-        z = pos.getBlockZ();
 
         generate3x3Cube(this.world, x+1, y+1, z+2, grass, dirt, dirt);
         generate3x3Cube(this.world, x-2, y+1, z+2, grass, dirt, dirt);
