@@ -40,6 +40,9 @@ public class IslandModel {
 
     public IslandModel(UUID id, UUID leader, int radius, Location center) {
         this (id, leader, new HashSet<>(), radius, center);
+
+        //I figured the leader should be a member of their own island
+        members.add(leader);
     }
 
 
@@ -88,6 +91,10 @@ public class IslandModel {
 
     public Set<UUID> getMembers() {
         return members;
+    }
+
+    public boolean isMember(UUID uuid){
+        return members.contains(uuid);
     }
 
     public Map<UUID, EquipmentPair> inventories(){ return inventories; }

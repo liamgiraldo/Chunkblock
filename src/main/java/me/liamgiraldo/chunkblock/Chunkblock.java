@@ -110,10 +110,7 @@ public final class Chunkblock extends JavaPlugin {
         else return this.fromString(content);
     }
 
-
-
-
-
-
-
+    public String[] getLinkedWorlds(){
+        return this.settings.getConfig().getStringList("linked-worlds").toArray(new String[0]);
+    }
 }
