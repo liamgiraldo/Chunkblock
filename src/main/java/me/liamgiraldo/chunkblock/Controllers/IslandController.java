@@ -4,9 +4,12 @@ import me.liamgiraldo.chunkblock.Chunkblock;
 import me.liamgiraldo.chunkblock.Models.IslandModel;
 import me.liamgiraldo.chunkblock.util.EquipmentPair;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -31,6 +34,86 @@ public class IslandController implements Listener {
         this.plugin = plugin;
         this.islands = new HashMap<>();
     }
+
+
+    /**
+     * Checks if a player can place a block at a location, cancels the event if they cannot
+     * @param event the BlockPlaceEvent
+     * */
+    @EventHandler
+    public void onPlaceBlock(BlockPlaceEvent event){
+        //the player should only be able to place blocks on any island they are a member of
+        Player player = event.getPlayer();
+        //if the player can't perform an action, we'll cancel the event
+        if(!canPlayerPerformAction(player)){
+            event.setCancelled(false);
+        }
+    }
+
+    /**
+     * Checks if a player can break a block at a location, cancels the event if they cannot
+     * @param event the BlockBreakEvent
+     * */
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event){
+        //the player should only be able to break blocks on any island they are a member of
+        Player player = event.getPlayer();
+        //if the player can't perform an action, we'll cancel the event
+        if(!canPlayerPerformAction(player)){
+            event.setCancelled(false);
+        }
+    }
+
+    /**
+     * Checks if a player is on a valid island
+     * What constitutes a valid island is whether the player is a member of the island they are on, positionally
+     * This includes the island they own
+     * @param player the player to check
+     * @return true if the player is on a valid island, false if they are not
+     * */
+    public boolean isPlayerOnValidIsland(Player player){
+        Location loc = player.getLocation();
+        IslandModel model = getIslandRelativeToLocation(loc);
+
+        if(model == null) return false;
+        if(model.getMembers().contains(player.getUniqueId())) return true;
+        if(islandOn(player) == model) return true;
+
+        return false;
+    }
+
+    /**
+     * Checks if a player can perform an action given their current location
+     * @param player the player to check
+     * @return true if the player can perform an action, false if they cannot
+     * */
+    public boolean canPlayerPerformAction(Player player){
+        //it's a no if they aren't on their own island or an island they aren't a member of
+        if(!isPlayerOnValidIsland(player)){
+            return false;
+        }
+
+        //it's a yes if they aren't in the world rerouted
+        if(player.getLocation().getWorld() != plugin.reroute.getWorld()){
+            return true;
+        }
+
+        //it's a no if they are in the world rerouted
+        return false;
+    }
+
+    /**
+     * Gets the island relative to a location
+     * @param loc the location to check
+     * @return the IslandModel that the location is on, null if the location is not on an island
+     * */
+    public IslandModel getIslandRelativeToLocation(Location loc){
+        for (IslandModel model : islands.values()){
+            if (model.bounds().contains(loc.getBlockX(),loc.getBlockZ())) return model;
+        }
+        return null;
+    }
+
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event){
@@ -128,12 +211,15 @@ public class IslandController implements Listener {
         return model;
     }
 
-    private IslandModel createNewIsland(Location center, UUID playerUUID){
+    public IslandModel createNewIsland(Location center, UUID playerUUID){
         UUID id = UUID.randomUUID();
         //Very unlikely, but just making sure the uuid isn't already in use
         while(plugin.islands.getConfig().contains("islands." + id)) id = UUID.randomUUID();
         IslandModel island = new IslandModel(id, playerUUID, 30, center);
         islands.put(id.toString(), island);
+
+        //generate the island
+        generator.generateSkyblock(center.getBlockX(), center.getBlockY(), center.getBlockZ());
 
         return island;
     }

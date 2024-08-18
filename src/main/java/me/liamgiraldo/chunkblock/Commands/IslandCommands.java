@@ -67,6 +67,28 @@ public class IslandCommands implements CommandExecutor, TabCompleter {
                     return true;
                 }
 
+                //Creating
+                if(size >= 1){
+                    if (sub.equals("create") || sub.equals("c")){
+                        IslandModel island = islandOn(player);
+                        if (island != null){
+                            player.sendMessage(ChatColor.RED + "You already have an island!");
+                            return false;
+                        }
+                        Location loc = player.getLocation();
+
+                        //TODO: idk if I should just be using 0,0,0 as the location for the island, it should just find a valid one anyways but gotta ask stephen
+                        IslandModel model = islandController.createNewIsland(new Location(plugin.reroute.getWorld(), 0,0,0), uuid);
+                        islandController.addPlayer(model, player);
+
+                        player.sendMessage(ChatColor.GREEN + "Island created!");
+
+                        //teleport the player to their newly created island
+                        player.teleport(model.getSpawn());
+                        return true;
+                    }
+                }
+
                 //joining (Think of this like the connection command)
                 if (size >= 2) {
                     String arg = args[1];

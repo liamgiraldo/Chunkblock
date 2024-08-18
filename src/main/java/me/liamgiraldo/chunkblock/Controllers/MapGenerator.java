@@ -35,13 +35,24 @@ public class MapGenerator {
     }
 
 
+    /**
+     * Generates a skyblock island at the given position
+     * @param x x coordinate
+     * @param y y coordinate
+     * @param z z coordinate
+     * */
     public void generateSkyblock(int x, int y, int z){
+        //5000 is just a random number that I chose, it could be anything
+        Vector pos = findValidPos(new Location(this.world, x, y, z), 10, 5000);
+
+        x = pos.getBlockX();
+        y = pos.getBlockY();
+        z = pos.getBlockZ();
+
         generate3x3Cube(this.world, x+1, y+1, z+2, grass, dirt, dirt);
         generate3x3Cube(this.world, x-2, y+1, z+2, grass, dirt, dirt);
         generate3x3Cube(this.world, x-2, y+1, z-1, grass, dirt, dirt);
-        //up 3 on z
-        //-2 on x
-        //up 2 on y
+
         this.world.generateTree(new Location(this.world, x-2, y+2, z+3), TreeType.TREE);
         Block block = this.world.getBlockAt(x-2, y+2, z-2);
         block.setType(Material.CHEST);
@@ -80,6 +91,11 @@ public class MapGenerator {
      * @return A valid center position for a new island
      */
     public Vector findValidPos(Location center, int distance, int maxIslandRad){
+        //TODO: question for stephen, why does this need to use a center location?
+        //wouldn't it just be better to find a random valid location without needing to pass in a center location?
+        //I suppose if there are no islands then maybe you would need a center, but if you already have one island then you could just find a random location based on pre-existing islands
+        //maybe im just misinterpreting how this works, lmk
+
         Location base = center.clone();
         BlockFace[] directions = new BlockFace[]{BlockFace.NORTH,BlockFace.EAST,BlockFace.SOUTH,BlockFace.WEST, BlockFace.NORTH_EAST,BlockFace.NORTH_WEST,BlockFace.SOUTH_EAST,BlockFace.SOUTH_WEST};
         Collection<IslandModel> islands = controller.islands.values();
